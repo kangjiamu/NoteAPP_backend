@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from .models import Note, NoteCategory, Tag
@@ -33,9 +33,12 @@ def login(request):
             return JsonResponse({'message': 'Logged in successfully'})
         else:
             return JsonResponse({'message': 'Invalid credentials'}, status=400)
+    else:
+        return HttpResponse('This endpoint only accepts POST requests.', status=405)
 
 
 @login_required
+@csrf_exempt
 def create_note(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -59,6 +62,7 @@ def list_notes(request):
     return JsonResponse(list(notes), safe=False)
 
 @login_required
+@csrf_exempt
 def update_note(request, note_id):
     note = get_object_or_404(Note, id=note_id, user=request.user)
     if request.method == 'PUT':
@@ -76,6 +80,7 @@ def update_note(request, note_id):
 
 
 @login_required
+@csrf_exempt
 def delete_note(request, note_id):
     note = get_object_or_404(Note, id=note_id, user=request.user)
     if request.method == 'DELETE':
@@ -83,10 +88,18 @@ def delete_note(request, note_id):
         return JsonResponse({'message': 'Note deleted successfully'})
 
 @login_required
+@csrf_exempt
 def list_notes_by_tag(request, tag_name):
     tag = get_object_or_404(Tag, name=tag_name, user=request.user)
     notes = tag.notes.all().values('id', 'title', 'content', 'created_at', 'updated_at')
     return JsonResponse(list(notes), safe=False)
+
+
+@login_required
+@csrf_exempt
+def get_profile(request):
+    profile = request.user.profile  # 这里可能有问题
+    return JsonResponse({'nickname': profile.nickname, 'bio': profile.bio, 'avatar': profile.avatar.url})
 
 @login_required
 @csrf_exempt
