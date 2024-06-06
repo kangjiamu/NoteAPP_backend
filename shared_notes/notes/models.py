@@ -10,7 +10,8 @@ class NoteCategory(models.Model):
         return self.name
     
 class Tag(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
+    # id = models.AutoField(primary_key=True)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='tags')
 
@@ -24,8 +25,10 @@ class Note(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='notes')
-    tags = models.ManyToManyField(
-        Tag, related_name='notes', blank=True)  # 多对多关系
+    # tags = models.ManyToManyField(
+    #     Tag, related_name='notes', blank=True)  # 多对多关系
+    # tags 这里我定义为List of Strings
+    tags = models.JSONField(default=list)
 
     def __str__(self):
         return self.title

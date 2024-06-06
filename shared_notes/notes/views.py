@@ -56,10 +56,25 @@ def create_note(request):
 
 
 @login_required
+@csrf_exempt
 def list_notes(request):
-    notes = request.user.notes.all().values(
-        'id', 'title', 'content', 'created_at', 'updated_at')
-    return JsonResponse(list(notes), safe=False)
+    # notes = request.user.notes.all().values(
+    # 'id', 'title', 'content', 'created_at', 'updated_at', 'tags')
+    notes = request.user.notes.all()
+    note_list = []
+    for note in notes:
+        note_dict = {
+            'id': note.id,
+            'title': note.title,
+            'content': note.content,
+            'created_at': note.created_at,
+            'updated_at': note.updated_at,
+            # 'tags': list(note.tags.values_list('id', 'name'))
+            'tags': note.tags
+        }
+        note_list.append(note_dict)
+    print(note_list)
+    return JsonResponse(note_list, safe=False)
 
 @login_required
 @csrf_exempt
@@ -69,12 +84,12 @@ def update_note(request, note_id):
         data = json.loads(request.body)
         note.title = data.get('title', note.title)
         note.content = data.get('content', note.content)
-        tags = data.get('tags', [])
-        note.tags.clear()
-        for tag_name in tags:
-            tag, created = Tag.objects.get_or_create(
-                name=tag_name, user=request.user)
-            note.tags.add(tag)
+        # tags = data.get('tags', [])
+        # note.tags.clear()
+        # for tag_name in tags:
+        #     # tag, created = Tag.objects.get_or_create(
+        #     #     name=tag_name, user=request.user)
+        #     note.tags.append(tag_name)
         note.save()
         return JsonResponse({'message': 'Note updated successfully'})
 
@@ -141,13 +156,18 @@ def auto_save(request, note_id):
 
 @login_required
 @csrf_exempt
-def create_tag(request):
+def create_tag(request, note_id):
     if request.method == 'POST':
+        note = get_object_or_404(Note, id=note_id, user=request.user)
         data = json.loads(request.body)
-        tag_name = data['name']
-        tag, created = Tag.objects.get_or_create(
-            name=tag_name, user=request.user)
-        return JsonResponse({'message': 'Tag created successfully', 'tag_id': tag.id})
+        tag_name = data
+        # tag, created = Tag.objects.get_or_create(
+        #     name=tag_name, user=request.user)
+        # note.tags.add(tag)
+        if tag_name not in note.tags:
+            note.tags.append(tag_name)  # 将tag添加到tags列表中
+            note.save()
+        return JsonResponse({'message': 'Tag created successfully', 'tag_id': 0})
 
 
 @login_required

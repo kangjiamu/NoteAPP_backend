@@ -14,7 +14,8 @@ urlpatterns = [
     path('upload/', upload_file, name='upload_file'),
     path('profile/update/', update_profile, name='update_profile'),
     path('notes/<int:note_id>/autosave/', auto_save, name='auto_save'),
-    path('tags/create/', create_tag, name='create_tag'),
+    # path('tags/create/', create_tag, name='create_tag'),
+    path('notes/<int:note_id>/tags/create/', create_tag, name='create_tag'),
     path('tags/<int:tag_id>/', update_tag, name='update_tag'),
     path('tags/<int:tag_id>/delete/', delete_tag, name='delete_tag'),
 ]
