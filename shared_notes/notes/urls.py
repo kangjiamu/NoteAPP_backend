@@ -1,6 +1,10 @@
 # notes/urls.py
-from django.urls import path, include
-from .views import register, login, create_note, list_notes, update_note, delete_note, list_notes_by_tag, upload_file, update_profile, auto_save, create_tag, update_tag, delete_tag
+from django.urls import include, path
+
+from .views import (auto_save, create_note, create_tag, delete_note,
+                    delete_tag, get_profile, list_notes, list_notes_by_tag,
+                    login, register, update_note, update_profile, update_tag,
+                    upload_file)
 
 urlpatterns = [
     path('register/', register, name='register'),
@@ -12,7 +16,8 @@ urlpatterns = [
     path('tags/<str:tag_name>/notes/',
          list_notes_by_tag, name='list_notes_by_tag'),
     path('upload/', upload_file, name='upload_file'),
-    path('profile/update/', update_profile, name='update_profile'),
+    path('update_profile/', update_profile, name='update_profile'),
+    path('get_profile/', get_profile, name='get_profile'),
     path('notes/<int:note_id>/autosave/', auto_save, name='auto_save'),
     # path('tags/create/', create_tag, name='create_tag'),
     path('notes/<int:note_id>/tags/create/', create_tag, name='create_tag'),
