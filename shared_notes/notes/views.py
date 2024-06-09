@@ -17,6 +17,10 @@ def register(request):
         username = data['username']
         password = data['password']
         user = User.objects.create_user(username=username, password=password)
+        user.profile.nickname = "New User"
+        user.profile.bio = "This guy is too lazy to leave anything here."
+        user.profile.avatar = 'default'
+        user.profile.save()
         return JsonResponse({'message': 'User created successfully'})
 
 
@@ -110,27 +114,63 @@ def list_notes_by_tag(request, tag_name):
     return JsonResponse(list(notes), safe=False)
 
 
+# @login_required
+# @csrf_exempt
+# def get_profile(request):
+#     profile = request.user.profile  # 这里可能有问题
+#     return JsonResponse({'nickname': profile.nickname, 'bio': profile.bio, 'avatar': profile.avatar.url})
+
+# @login_required
+# @csrf_exempt
+# def update_profile(request):
+#     if request.method == 'POST':
+#         data = json.loads(request.body)
+#         user = request.user
+#         profile = user.profile
+#         profile.nickname = data.get('nickname', profile.nickname)
+#         profile.bio = data.get('bio', profile.bio)
+#         if 'avatar' in request.FILES:
+#             profile.avatar = request.FILES['avatar']
+#         profile.save()
+#         return JsonResponse({'message': 'Profile updated successfully'})
+
 @login_required
 @csrf_exempt
 def get_profile(request):
-    profile = request.user.profile  # 这里可能有问题
-    return JsonResponse({'nickname': profile.nickname, 'bio': profile.bio, 'avatar': profile.avatar.url})
+    print(request.user.is_authenticated)
+    if request.method == 'GET':
+        print("get api")
+        # 获取用户个人资料
+        profile = request.user.profile
+        print(profile.avatar)
+        return JsonResponse({
+            'nickname': profile.nickname,
+            'bio': profile.bio,
+            'avatar': profile.avatar.url if profile.avatar else '',
+        })
+
 
 @login_required
 @csrf_exempt
 def update_profile(request):
-    if request.method == 'POST':
+    if request.method == 'PUT':
         data = json.loads(request.body)
+        print(data)
         user = request.user
         profile = user.profile
         profile.nickname = data.get('nickname', profile.nickname)
         profile.bio = data.get('bio', profile.bio)
-        if 'avatar' in request.FILES:
-            profile.avatar = request.FILES['avatar']
+        print(request.FILES)
+        if 'avatar' in data:
+            if data['avatar'] != "":
+                profile.avatar = data['avatar']
+        if 'password' in data:
+            if data['password'] != "":
+                user.set_password(data['password'])  # 更新密码
+                user.save()
         profile.save()
         return JsonResponse({'message': 'Profile updated successfully'})
-
-
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
 
 
 @login_required
@@ -188,3 +228,15 @@ def delete_tag(request, tag_id):
     if request.method == 'DELETE':
         tag.delete()
         return JsonResponse({'message': 'Tag deleted successfully'})
+
+# @login_required
+# @csrf_exempt
+# def upload_image(request):
+#     if request.method == 'POST' and request.FILES['image']:
+#         image = request.FILES['image']
+#         save_path = os.path.join('uploads/', image.name)
+#         with open(save_path, 'wb+') as destination:
+#             for chunk in image.chunks():
+#                 destination.write(chunk)
+#         return JsonResponse({'message': 'Image uploaded successfully!'}, status=200)
+#     return JsonResponse({'error': 'Invalid request'}, status=400)
