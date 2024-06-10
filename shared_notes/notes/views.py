@@ -106,10 +106,6 @@ def list_notes_by_tag(request, tag_name):
     return JsonResponse(list(notes), safe=False)
 
 
-
-
-
-
 @login_required
 @csrf_exempt
 def upload_file(request):

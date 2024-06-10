@@ -18,6 +18,7 @@ urlpatterns = [
     path('upload/', upload_file, name='upload_file'),
     path('update_profile/', update_profile, name='update_profile'),
     path('get_profile/', get_profile, name='get_profile'),
+
     path('notes/<int:note_id>/autosave/', auto_save, name='auto_save'),
     # path('tags/create/', create_tag, name='create_tag'),
     path('notes/<int:note_id>/tags/create/', create_tag, name='create_tag'),
