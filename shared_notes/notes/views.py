@@ -113,6 +113,7 @@ def list_notes_by_tag(request, tag_name):
 @login_required
 @csrf_exempt
 def upload_file(request):
+    print(request.FILES)
     if request.method == 'POST' and request.FILES['file']:
         file = request.FILES['file']
         file_name = default_storage.save(file.name, ContentFile(file.read()))
@@ -163,36 +164,65 @@ def delete_tag(request, tag_id):
 @login_required
 @csrf_exempt
 def get_profile(request):
-    print(request.user.is_authenticated)
     if request.method == 'GET':
-        print("get api")
-        # 获取用户个人资料
-        profile = request.user.profile 
-        print(profile.avatar)
+        profile = request.user.profile
         return JsonResponse({
             'nickname': profile.nickname,
             'bio': profile.bio,
             'avatar': profile.avatar.url if profile.avatar else '',
+            'local_avatar_url': profile.local_avatar_url,
+            'remote_avatar_url': profile.remote_avatar_url,
         })
 
 @login_required
 @csrf_exempt
 def update_profile(request):
-    if request.method == 'PUT':
-        data = json.loads(request.body)
-        print(data)
-        user = request.user
-        profile = user.profile
-        profile.nickname = data.get('nickname', profile.nickname)
-        profile.bio = data.get('bio', profile.bio)
-        print(request.FILES)
-        if 'avatar' in data:
-            if data['avatar']!="":
-                profile.avatar = data['avatar']
-        if 'password' in data:
-            if data['password']!="":
-                user.set_password(data['password'])  # 更新密码
-                user.save()
-        profile.save()
-        return JsonResponse({'message': 'Profile updated successfully'})
-    return JsonResponse({'error': 'Invalid request method'}, status=400)
+    data = json.loads(request.body)
+    user = request.user
+    profile = user.profile
+
+    profile.nickname = data.get('nickname', profile.nickname)
+    profile.bio = data.get('bio', profile.bio)
+    profile.local_avatar_url = data.get('local_avatar_url', profile.local_avatar_url)
+
+    if 'avatar' in data:
+        if data['avatar']:
+            profile.avatar = data['avatar']
+            profile.remote_avatar_url = request.build_absolute_uri(profile.avatar.url)
+
+    if 'password' in data:
+        if data['password']:
+            user.set_password(data['password'])
+            user.save()
+
+    profile.save()
+    return JsonResponse({'message': 'Profile updated successfully'})
+
+from rest_framework import status
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import UserProfile
+from .serializers import ProfileSerializer
+
+
+class ProfileUpdateView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def put(self, request, *args, **kwargs):
+        profile_data = request.data
+        profile_instance = get_object_or_404(UserProfile, id=profile_data['id'])
+
+        local_avatar_url = profile_data.get('local_avatar_url')
+        if 'avatar' in request.FILES:
+            profile_instance.avatar = request.FILES['avatar']
+            profile_instance.remote_avatar_url = request.build_absolute_uri(profile_instance.avatar.url)
+
+        profile_instance.local_avatar_url = local_avatar_url if local_avatar_url else profile_instance.local_avatar_url
+
+        serializer = ProfileSerializer(instance=profile_instance, data=profile_data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
