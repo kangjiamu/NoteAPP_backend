@@ -24,5 +24,4 @@ urlpatterns = [
     path('notes/<int:note_id>/tags/create/', create_tag, name='create_tag'),
     path('tags/<int:tag_id>/', update_tag, name='update_tag'),
     path('tags/<int:tag_id>/delete/', delete_tag, name='delete_tag'),
-    path('update_profile/', ProfileUpdateView.as_view(), name='update_profile'),
 ]

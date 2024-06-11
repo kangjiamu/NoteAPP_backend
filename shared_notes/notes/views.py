@@ -20,7 +20,7 @@ def register(request):
         user = User.objects.create_user(username=username, password=password)
         user.profile.nickname = "New User"
         user.profile.bio = "This guy is too lazy to leave anything here."
-        user.profile.avatar = 'default'
+        user.profile.local_avatar_url = 'default'
         user.profile.save()
         return JsonResponse({'message': 'User created successfully'})
 
@@ -106,6 +106,8 @@ def list_notes_by_tag(request, tag_name):
     return JsonResponse(list(notes), safe=False)
 
 
+
+
 @login_required
 @csrf_exempt
 def upload_file(request):
@@ -162,10 +164,15 @@ def delete_tag(request, tag_id):
 def get_profile(request):
     if request.method == 'GET':
         profile = request.user.profile
+        print({
+            'nickname': profile.nickname,
+            'bio': profile.bio,
+            'local_avatar_url': profile.local_avatar_url,
+            'remote_avatar_url': profile.remote_avatar_url,
+        })
         return JsonResponse({
             'nickname': profile.nickname,
             'bio': profile.bio,
-            'avatar': profile.avatar.url if profile.avatar else '',
             'local_avatar_url': profile.local_avatar_url,
             'remote_avatar_url': profile.remote_avatar_url,
         })
@@ -179,18 +186,15 @@ def update_profile(request):
 
     profile.nickname = data.get('nickname', profile.nickname)
     profile.bio = data.get('bio', profile.bio)
-    profile.local_avatar_url = data.get('local_avatar_url', profile.local_avatar_url)
-
-    if 'avatar' in data:
-        if data['avatar']:
-            profile.avatar = data['avatar']
-            profile.remote_avatar_url = request.build_absolute_uri(profile.avatar.url)
+    if data['localAvatarUrl']:
+        profile.local_avatar_url = data.get('localAvatarUrl', profile.local_avatar_url)
+        profile.remote_avatar_url = request.build_absolute_uri(profile.local_avatar_url)
 
     if 'password' in data:
         if data['password']:
             user.set_password(data['password'])
             user.save()
-
+    print({'profile nickname': profile.nickname, 'profile bio': profile.bio,  'profile local_avatar_url': profile.local_avatar_url, 'profile remote_avatar_url': profile.remote_avatar_url})
     profile.save()
     return JsonResponse({'message': 'Profile updated successfully'})
 
@@ -210,9 +214,8 @@ class ProfileUpdateView(APIView):
         profile_data = request.data
         profile_instance = get_object_or_404(UserProfile, id=profile_data['id'])
 
-        local_avatar_url = profile_data.get('local_avatar_url')
+        local_avatar_url = profile_data.get('avatar')
         if 'avatar' in request.FILES:
-            profile_instance.avatar = request.FILES['avatar']
             profile_instance.remote_avatar_url = request.build_absolute_uri(profile_instance.avatar.url)
 
         profile_instance.local_avatar_url = local_avatar_url if local_avatar_url else profile_instance.local_avatar_url
