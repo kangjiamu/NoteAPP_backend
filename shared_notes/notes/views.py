@@ -56,8 +56,11 @@ def create_note(request):
         title = data['title']
         content = data['content']
         tags = data.get('tags', [])  # 获取标签列表
+        print(data)
+        print(request.user)
         note = Note.objects.create(
             title=title, content=content, user=request.user)
+        print(note,"create_note")
         for tag_name in tags:
             # 如果标签不存在，则创建
             tag, created = Tag.objects.get_or_create(
@@ -67,11 +70,25 @@ def create_note(request):
 
 
 @login_required
-def list_notes(request):
-    notes = request.user.notes.all().values(
-        'id', 'title', 'content', 'created_at', 'updated_at')
-    return JsonResponse(list(notes), safe=False)
 
+def list_notes(request):
+    # notes = request.user.notes.all().values(
+    # 'id', 'title', 'content', 'created_at', 'updated_at', 'tags')
+    notes = request.user.notes.all()
+    note_list = []
+    for note in notes:
+        note_dict = {
+            'id': note.id,
+            'title': note.title,
+            'content': note.content,
+            'created_at': note.created_at,
+            'updated_at': note.updated_at,
+            'tags': list(note.tags.values_list('name', flat=True))
+            #'tags': note.tags
+        }
+        note_list.append(note_dict)
+    print(note_list)
+    return JsonResponse(note_list, safe=False)
 @login_required
 @csrf_exempt
 def update_note(request, note_id):
@@ -80,12 +97,12 @@ def update_note(request, note_id):
         data = json.loads(request.body)
         note.title = data.get('title', note.title)
         note.content = data.get('content', note.content)
-        tags = data.get('tags', [])
-        note.tags.clear()
-        for tag_name in tags:
-            tag, created = Tag.objects.get_or_create(
-                name=tag_name, user=request.user)
-            note.tags.add(tag)
+        # tags = data.get('tags', [])
+        # note.tags.clear()
+        # for tag_name in tags:
+        #     # tag, created = Tag.objects.get_or_create(
+        #     #     name=tag_name, user=request.user)
+        #     note.tags.append(tag_name)
         note.save()
         return JsonResponse({'message': 'Note updated successfully'})
 
@@ -95,6 +112,7 @@ def update_note(request, note_id):
 def delete_note(request, note_id):
     note = get_object_or_404(Note, id=note_id, user=request.user)
     if request.method == 'DELETE':
+        print(note)
         note.delete()
         return JsonResponse({'message': 'Note deleted successfully'})
 
@@ -132,13 +150,20 @@ def auto_save(request, note_id):
 
 @login_required
 @csrf_exempt
-def create_tag(request):
+def create_tag(request, note_id):
     if request.method == 'POST':
+        note = get_object_or_404(Note, id=note_id, user=request.user)
         data = json.loads(request.body)
-        tag_name = data['name']
-        tag, created = Tag.objects.get_or_create(
-            name=tag_name, user=request.user)
-        return JsonResponse({'message': 'Tag created successfully', 'tag_id': tag.id})
+        tag_name = data
+        # tag, created = Tag.objects.get_or_create(
+        #     name=tag_name, user=request.user)
+        # note.tags.add(tag)
+        if not note.tags.filter(name=tag_name, user=request.user).exists():
+            tag, created = Tag.objects.get_or_create(name=tag_name, user=request.user)
+            note.tags.add(tag)  # 使用 add 方法将标签添加到 note 的 tags 中
+            note.save()
+            print(note.tags.all())
+        return JsonResponse({'message': 'Tag created successfully', 'tag_id': 0})
 
 
 @login_required
