@@ -97,12 +97,7 @@ def update_note(request, note_id):
         data = json.loads(request.body)
         note.title = data.get('title', note.title)
         note.content = data.get('content', note.content)
-        # tags = data.get('tags', [])
-        # note.tags.clear()
-        # for tag_name in tags:
-        #     # tag, created = Tag.objects.get_or_create(
-        #     #     name=tag_name, user=request.user)
-        #     note.tags.append(tag_name)
+        
         note.save()
         return JsonResponse({'message': 'Note updated successfully'})
 
